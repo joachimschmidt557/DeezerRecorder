@@ -67,23 +67,32 @@ namespace SpotifyWebRecorder.Forms.UI
 
 			string baseDir = System.IO.Path.GetDirectoryName( System.Reflection.Assembly.GetEntryAssembly().Location );
 
-			Xpcom.Initialize(  baseDir + "\\xulrunner" );
-			browser = new GeckoWebBrowser { Dock = DockStyle.Fill };
-			GeckoPreferences.User["general.useragent.override"] = Util.GetDefaultUserAgent();
-			GeckoPreferences.Default["extensions.blocklist.enabled"] = false;   // enables flash. If it does not work, also make sure that "Project -> Properties -> Debug -> Enable Visual Studio hostng process" is not enablable
+            // Initailize the chromium browser
+            Cef.Initialize();
 
-            this.splitContainer1.Panel2.Controls.Add(browser);
+   //         Xpcom.Initialize(  baseDir + "\\xulrunner" );
+			//browser = new GeckoWebBrowser { Dock = DockStyle.Fill };
+			//GeckoPreferences.User["general.useragent.override"] = Util.GetDefaultUserAgent();
+			//GeckoPreferences.Default["extensions.blocklist.enabled"] = false;   // enables flash. If it does not work, also make sure that "Project -> Properties -> Debug -> Enable Visual Studio hostng process" is not enablable
+
+   //         this.splitContainer1.Panel2.Controls.Add(browser);
             //browser.DocumentTitleChanged += new EventHandler( browser_DocumentTitleChanged );
 
-            GeckoWebBrowser browserAbout = new GeckoWebBrowser { Dock = DockStyle.Fill };
-			browserAbout.Navigate( baseDir + "\\About.html" );
-			tabPageAbout.Controls.Add( browserAbout );
-			browserAbout.DomClick += OpenGeckoLinksInNewWindow;
+   //         GeckoWebBrowser browserAbout = new GeckoWebBrowser { Dock = DockStyle.Fill };
+			//browserAbout.Navigate( baseDir + "\\About.html" );
+			//tabPageAbout.Controls.Add( browserAbout );
+			//browserAbout.DomClick += OpenGeckoLinksInNewWindow;
 
-			GeckoWebBrowser browserHelp = new GeckoWebBrowser { Dock = DockStyle.Fill };
-			browserHelp.Navigate( baseDir + "\\Help.html" );
-			tabPageHelp.Controls.Add( browserHelp );
-			browserHelp.DomClick += OpenGeckoLinksInNewWindow;
+            ChromiumWebBrowser aboutBrowser = new ChromiumWebBrowser("http://www.google.com/");
+            tabPageAbout.Controls.Add(aboutBrowser);
+
+            ChromiumWebBrowser helpBrowser = new ChromiumWebBrowser("http://www.google.com/");
+            tabPageAbout.Controls.Add(helpBrowser);
+
+			//GeckoWebBrowser browserHelp = new GeckoWebBrowser { Dock = DockStyle.Fill };
+			//browserHelp.Navigate( baseDir + "\\Help.html" );
+			//tabPageHelp.Controls.Add( browserHelp );
+			//browserHelp.DomClick += OpenGeckoLinksInNewWindow;
 
 			stateCheckTimer.Interval = 25;
 			stateCheckTimer.Tick += new EventHandler( stateCheckTimer_Tick );
@@ -97,19 +106,6 @@ namespace SpotifyWebRecorder.Forms.UI
 #else
 			//browser.Navigate( Util.GetDefaultURL() );
 #endif
-		}
-
-		void OpenGeckoLinksInNewWindow( object sender, DomMouseEventArgs e )
-		{
-			if( sender != null && e != null && e.Target != null )
-			{
-				GeckoElement clicked = e.Target.CastToGeckoElement();
-				if( clicked.TagName == "A" )
-				{
-					e.Handled = true;
-					System.Diagnostics.Process.Start( clicked.GetAttribute( "href" ) );
-				}
-			}
 		}
 
         private void ChangeApplicationState(RecorderState newState)
@@ -195,8 +191,7 @@ namespace SpotifyWebRecorder.Forms.UI
 
         private void OnLoad(object sender, EventArgs eventArgs)
         {
-            // Initailize the chromium browser
-            Cef.Initialize();
+            
 
             mainBrowser = new ChromiumWebBrowser("https://www.deezer.com/");
             this.splitContainer1.Panel2.Controls.Add(mainBrowser);
@@ -502,12 +497,12 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		private void toolStripButton_Home_Click( object sender, EventArgs e )
 		{
-			//browser.Navigate( Util.GetDefaultURL() );
+            mainBrowser.Load("https://www.deezer.com/");
 		}
 
 		private void toolStripButton_Back_Click( object sender, EventArgs e )
 		{
-			//if( browser.CanGoBack ) browser.GoBack();
+            mainBrowser.Back();
 		}
 
 		private void addToLog( string text )
@@ -600,140 +595,140 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		void stateCheckTimer_Tick( object sender, EventArgs e )
 		{
-			// figure out what spotify is doing right now
+		//	// figure out what spotify is doing right now
 
-			var iframes = browser.Document.GetElementsByTagName( "iframe" );
-			foreach( Gecko.DOM.GeckoIFrameElement frame in iframes )
-			{
-				GeckoHtmlElement doc = null;
+		//	var iframes = browser.Document.GetElementsByTagName( "iframe" );
+		//	foreach( Gecko.DOM.GeckoIFrameElement frame in iframes )
+		//	{
+		//		GeckoHtmlElement doc = null;
 
-				string queryArtist = "", queryTrack = "", queryTrackUri = "", queryIsPlaying = "", queryAddButton = "", attrTrackUri = "";
+		//		string queryArtist = "", queryTrack = "", queryTrackUri = "", queryIsPlaying = "", queryAddButton = "", attrTrackUri = "";
 
-				// Old Player
-				if( frame.Id == "app-player" )
-				{
-					doc = frame.ContentDocument.DocumentElement as GeckoHtmlElement;
+		//		// Old Player
+		//		if( frame.Id == "app-player" )
+		//		{
+		//			doc = frame.ContentDocument.DocumentElement as GeckoHtmlElement;
 
-					queryIsPlaying = "#play-pause.playing";
-					queryArtist = "#track-artist a";
-					queryTrack = "#track-name a";
-					queryTrackUri = "#track-name a";
-					attrTrackUri = "href";
-					queryAddButton = "#track-add";
-				}
-				// New Player
-				if( frame.Id == "main" )
-				{
-					doc = frame.ContentDocument.DocumentElement as GeckoHtmlElement;
+		//			queryIsPlaying = "#play-pause.playing";
+		//			queryArtist = "#track-artist a";
+		//			queryTrack = "#track-name a";
+		//			queryTrackUri = "#track-name a";
+		//			attrTrackUri = "href";
+		//			queryAddButton = "#track-add";
+		//		}
+		//		// New Player
+		//		if( frame.Id == "main" )
+		//		{
+		//			doc = frame.ContentDocument.DocumentElement as GeckoHtmlElement;
 
-					queryIsPlaying = "#play.playing";
-					queryArtist = "p.artist a";
-					queryTrack = "p.track a";
-					queryTrackUri = "p.track a";
-					attrTrackUri = "data-uri"; 
-					queryAddButton = ".caption button.button-add";
-				}
+		//			queryIsPlaying = "#play.playing";
+		//			queryArtist = "p.artist a";
+		//			queryTrack = "p.track a";
+		//			queryTrackUri = "p.track a";
+		//			attrTrackUri = "data-uri"; 
+		//			queryAddButton = ".caption button.button-add";
+		//		}
 
-				if( doc != null )
-				{
-					SpotifyState oldState = currentSpotifyState;
-					string oldTrack = currentTrack.TrackUri;
+		//		if( doc != null )
+		//		{
+		//			SpotifyState oldState = currentSpotifyState;
+		//			string oldTrack = currentTrack.TrackUri;
 
-					// get current track
-					var isPlaying = doc.QuerySelector( queryIsPlaying );
-					if( isPlaying != null )
-					{
-						currentSpotifyState = SpotifyState.Playing;
-						var artist = doc.QuerySelector( queryArtist ).TextContent;
-						var title = doc.QuerySelector( queryTrack ).TextContent;
-						var trackUri = doc.QuerySelector( queryTrackUri ).GetAttribute( attrTrackUri );
-						currentTrack = new Mp3Tag( title, artist, trackUri );
-					}
-					else
-					{
-						currentSpotifyState = SpotifyState.Paused;
-					}
+		//			// get current track
+		//			var isPlaying = doc.QuerySelector( queryIsPlaying );
+		//			if( isPlaying != null )
+		//			{
+		//				currentSpotifyState = SpotifyState.Playing;
+		//				var artist = doc.QuerySelector( queryArtist ).TextContent;
+		//				var title = doc.QuerySelector( queryTrack ).TextContent;
+		//				var trackUri = doc.QuerySelector( queryTrackUri ).GetAttribute( attrTrackUri );
+		//				currentTrack = new Mp3Tag( title, artist, trackUri );
+		//			}
+		//			else
+		//			{
+		//				currentSpotifyState = SpotifyState.Paused;
+		//			}
 
-					// ad detection (new player only)
-					var addToMyMusicButton = doc.QuerySelector( queryAddButton );
-					if( addToMyMusicButton != null )
-					{
-						var style = addToMyMusicButton.Attributes["style"];
-						if( style != null )
-						{
-							if( style.NodeValue.Contains( "display: none" ) )
-							{
-								currentSpotifyState = SpotifyState.Ad;
-							}
-						}
-					}
+		//			// ad detection (new player only)
+		//			var addToMyMusicButton = doc.QuerySelector( queryAddButton );
+		//			if( addToMyMusicButton != null )
+		//			{
+		//				var style = addToMyMusicButton.Attributes["style"];
+		//				if( style != null )
+		//				{
+		//					if( style.NodeValue.Contains( "display: none" ) )
+		//					{
+		//						currentSpotifyState = SpotifyState.Ad;
+		//					}
+		//				}
+		//			}
 					
-					// extra ad detection, works for old player too
-					if( currentTrack.Artist == "Spotify" ) currentSpotifyState = SpotifyState.Ad;
+		//			// extra ad detection, works for old player too
+		//			if( currentTrack.Artist == "Spotify" ) currentSpotifyState = SpotifyState.Ad;
 
 
-					// mute sound on ads
-					if( currentSpotifyState == SpotifyState.Ad )
-					{
-						if( MuteOnAdsCheckBox.Checked && !MutedSound )
-						{
-							addToLog( "Ads detected - Attempting to Mute!" );
-							Util.ToggleMuteVolume( this.Handle );
-							MutedSound = true;
-						}
-					}
-					else
-					{
-						if( MutedSound )
-						{
-							addToLog( "Un-Muting" );
-							Util.ToggleMuteVolume( this.Handle );
-							MutedSound = false;
-						}
-					}
+		//			// mute sound on ads
+		//			if( currentSpotifyState == SpotifyState.Ad )
+		//			{
+		//				if( MuteOnAdsCheckBox.Checked && !MutedSound )
+		//				{
+		//					addToLog( "Ads detected - Attempting to Mute!" );
+		//					Util.ToggleMuteVolume( this.Handle );
+		//					MutedSound = true;
+		//				}
+		//			}
+		//			else
+		//			{
+		//				if( MutedSound )
+		//				{
+		//					addToLog( "Un-Muting" );
+		//					Util.ToggleMuteVolume( this.Handle );
+		//					MutedSound = false;
+		//				}
+		//			}
 
-					// set state if changed
-					if( oldState != currentSpotifyState || oldTrack != currentTrack.TrackUri )
-					{
-						if( currentSpotifyState == SpotifyState.Playing )
-						{
-							var song = currentTrack.Artist + " - " + currentTrack.Title;
-							songLabel.Text = song;
-							addToLog( "Now playing: " + song + " (" + currentTrack.TrackUri  + ")" );
-							if( _currentApplicationState != RecorderState.NotRecording && oldTrack != currentTrack.TrackUri )
-							{
-								ChangeApplicationState( RecorderState.Recording );
-							}
-							else if( _currentApplicationState == RecorderState.Recording )
-							{
-								ChangeApplicationState( RecorderState.WaitingForRecording );
-							}
-						}
-						else if( currentSpotifyState == SpotifyState.Paused )
-						{
-							addToLog( "Music stopped" );
-							if( _currentApplicationState == RecorderState.Recording )
-							{
-								ChangeApplicationState( RecorderState.WaitingForRecording );
-							}
-						}
-						else if( currentSpotifyState == SpotifyState.Ad )
-						{
-							addToLog( "Ads..." );
-							if( _currentApplicationState == RecorderState.Recording )
-							{
-								ChangeApplicationState( RecorderState.WaitingForRecording );
-							}
-						}
+		//			// set state if changed
+		//			if( oldState != currentSpotifyState || oldTrack != currentTrack.TrackUri )
+		//			{
+		//				if( currentSpotifyState == SpotifyState.Playing )
+		//				{
+		//					var song = currentTrack.Artist + " - " + currentTrack.Title;
+		//					songLabel.Text = song;
+		//					addToLog( "Now playing: " + song + " (" + currentTrack.TrackUri  + ")" );
+		//					if( _currentApplicationState != RecorderState.NotRecording && oldTrack != currentTrack.TrackUri )
+		//					{
+		//						ChangeApplicationState( RecorderState.Recording );
+		//					}
+		//					else if( _currentApplicationState == RecorderState.Recording )
+		//					{
+		//						ChangeApplicationState( RecorderState.WaitingForRecording );
+		//					}
+		//				}
+		//				else if( currentSpotifyState == SpotifyState.Paused )
+		//				{
+		//					addToLog( "Music stopped" );
+		//					if( _currentApplicationState == RecorderState.Recording )
+		//					{
+		//						ChangeApplicationState( RecorderState.WaitingForRecording );
+		//					}
+		//				}
+		//				else if( currentSpotifyState == SpotifyState.Ad )
+		//				{
+		//					addToLog( "Ads..." );
+		//					if( _currentApplicationState == RecorderState.Recording )
+		//					{
+		//						ChangeApplicationState( RecorderState.WaitingForRecording );
+		//					}
+		//				}
 
-					}
+		//			}
 
-					break;
-				}
+		//			break;
+		//		}
 
-			}
+		//	}
 
-			songLabel.Visible = _currentApplicationState == RecorderState.Recording;
+		//	songLabel.Visible = _currentApplicationState == RecorderState.Recording;
 		}
 
 	}

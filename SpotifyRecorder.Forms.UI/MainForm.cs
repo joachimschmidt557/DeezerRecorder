@@ -13,7 +13,6 @@ using System.Linq;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 using System.Runtime.InteropServices;
-using Gecko;
 using CefSharp;
 using CefSharp.WinForms;
 
@@ -21,7 +20,7 @@ namespace SpotifyWebRecorder.Forms.UI
 {
     public partial class MainForm : Form
     {
-		GeckoWebBrowser browser;
+		//GeckoWebBrowser browser;
         ChromiumWebBrowser mainBrowser;
 		Timer stateCheckTimer = new Timer();
 
@@ -65,7 +64,7 @@ namespace SpotifyWebRecorder.Forms.UI
             Load += OnLoad;
             Closing += OnClosing;
 
-			string baseDir = System.IO.Path.GetDirectoryName( System.Reflection.Assembly.GetEntryAssembly().Location );
+			//string baseDir = System.IO.Path.GetDirectoryName( System.Reflection.Assembly.GetEntryAssembly().Location );
 
             // Initailize the chromium browser
             Cef.Initialize();

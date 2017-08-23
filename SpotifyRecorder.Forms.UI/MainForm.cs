@@ -14,12 +14,15 @@ using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 using System.Runtime.InteropServices;
 using Gecko;
+using CefSharp;
+using CefSharp.WinForms;
 
 namespace SpotifyWebRecorder.Forms.UI
 {
     public partial class MainForm : Form
     {
 		GeckoWebBrowser browser;
+        ChromiumWebBrowser mainBrowser;
 		Timer stateCheckTimer = new Timer();
 
 		private enum RecorderState
@@ -67,12 +70,12 @@ namespace SpotifyWebRecorder.Forms.UI
 			Xpcom.Initialize(  baseDir + "\\xulrunner" );
 			browser = new GeckoWebBrowser { Dock = DockStyle.Fill };
 			GeckoPreferences.User["general.useragent.override"] = Util.GetDefaultUserAgent();
-			GeckoPreferences.Default["extensions.blocklist.enabled"] = false;	// enables flash. If it does not work, also make sure that "Project -> Properties -> Debug -> Enable Visual Studio hostng process" is not enablable
+			GeckoPreferences.Default["extensions.blocklist.enabled"] = false;   // enables flash. If it does not work, also make sure that "Project -> Properties -> Debug -> Enable Visual Studio hostng process" is not enablable
 
-			this.splitContainer1.Panel2.Controls.Add( browser );
-			//browser.DocumentTitleChanged += new EventHandler( browser_DocumentTitleChanged );
+            this.splitContainer1.Panel2.Controls.Add(browser);
+            //browser.DocumentTitleChanged += new EventHandler( browser_DocumentTitleChanged );
 
-			GeckoWebBrowser browserAbout = new GeckoWebBrowser { Dock = DockStyle.Fill };
+            GeckoWebBrowser browserAbout = new GeckoWebBrowser { Dock = DockStyle.Fill };
 			browserAbout.Navigate( baseDir + "\\About.html" );
 			tabPageAbout.Controls.Add( browserAbout );
 			browserAbout.DomClick += OpenGeckoLinksInNewWindow;
@@ -192,6 +195,12 @@ namespace SpotifyWebRecorder.Forms.UI
 
         private void OnLoad(object sender, EventArgs eventArgs)
         {
+            // Initailize the chromium browser
+            Cef.Initialize();
+
+            mainBrowser = new ChromiumWebBrowser("https://www.deezer.com/");
+            this.splitContainer1.Panel2.Controls.Add(mainBrowser);
+            
             //load the available devices
             LoadWasapiDevicesCombo();
 
@@ -229,6 +238,9 @@ namespace SpotifyWebRecorder.Forms.UI
         {
 			StopRecording();
             ChangeApplicationState(RecorderState.Closing);
+
+            Cef.Shutdown();
+
 			Util.SetDefaultBitrate( bitrateComboBox.SelectedIndex );
             Util.SetDefaultDevice(deviceListBox.SelectedItem.ToString());
             Util.SetDefaultOutputPath(outputFolderTextBox.Text);
@@ -490,12 +502,12 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		private void toolStripButton_Home_Click( object sender, EventArgs e )
 		{
-			browser.Navigate( Util.GetDefaultURL() );
+			//browser.Navigate( Util.GetDefaultURL() );
 		}
 
 		private void toolStripButton_Back_Click( object sender, EventArgs e )
 		{
-			if( browser.CanGoBack ) browser.GoBack();
+			//if( browser.CanGoBack ) browser.GoBack();
 		}
 
 		private void addToLog( string text )
@@ -584,19 +596,6 @@ namespace SpotifyWebRecorder.Forms.UI
 		private void OpenMixerButtonClick( object sender, EventArgs e )
 		{
 			Process.Start( "sndvol" );
-		}
-
-		private void toolStripButtonHideSidebar_Click( object sender, EventArgs e )
-		{
-			if( toolStripButtonHideSidebar.Checked )
-			{
-				splitContainer1.Panel1Collapsed = false;
-			}
-			else
-			{
-				splitContainer1.Panel1Collapsed = true;
-			}
-			toolStripButtonHideSidebar.Checked = !toolStripButtonHideSidebar.Checked;
 		}
 
 		void stateCheckTimer_Tick( object sender, EventArgs e )

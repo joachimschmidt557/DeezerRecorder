@@ -31,5 +31,10 @@
             }
             return true;
         }
+
+        public override string ToString()
+        {
+            return this.Artist + " - " + this.Title;
+        }
     }
 }

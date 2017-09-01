@@ -125,7 +125,6 @@ namespace SpotifyWebRecorder.Forms.UI
 
 #if !DEBUG
 			tabControl1.TabPages.RemoveByKey("tabPageLog");
-			browser.Navigate( Util.GetDefaultURL() );
 #else
 			//browser.Navigate( Util.GetDefaultURL() );
 #endif

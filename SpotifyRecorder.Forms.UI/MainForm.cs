@@ -55,7 +55,7 @@ namespace SpotifyWebRecorder.Forms.UI
         /// <summary>
         /// The current state of the web player
         /// </summary>
-		public enum SpotifyState
+		public enum DeezerState
 		{
 			Unknown = 0,
 			Paused = 1,
@@ -65,14 +65,14 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		private Mp3Tag currentTrack = new Mp3Tag("","");
 		private Mp3Tag recordingTrack = new Mp3Tag("","");
-		private SpotifyState currentSpotifyState = SpotifyState.Unknown;
+		private DeezerState currentDeezerState = DeezerState.Unknown;
 
         public class StateChangedEventArgs : EventArgs
         {
             public Mp3Tag Song { get; set; }
             public Mp3Tag PreviousSong { get; set; }
-            public SpotifyState State { get; set; }
-            public SpotifyState PreviousState { get; set; }
+            public DeezerState State { get; set; }
+            public DeezerState PreviousState { get; set; }
         }
 
         public delegate void StateChangedEventHandler(object sender, StateChangedEventArgs e);
@@ -647,9 +647,9 @@ namespace SpotifyWebRecorder.Forms.UI
         public void Spotify_StateChanged( object sender, StateChangedEventArgs e )
         {
             addToLog("Change detected");
-            currentSpotifyState = e.State;
+            currentDeezerState = e.State;
             currentTrack = e.Song;
-            if (e.State == SpotifyState.Playing)
+            if (e.State == DeezerState.Playing)
             {
                 string song = e.Song.ToString();
                 songLabel.Text = song;
@@ -666,7 +666,7 @@ namespace SpotifyWebRecorder.Forms.UI
                     ChangeApplicationState(RecorderState.Recording);
                 }
             }
-            else if (e.State == SpotifyState.Paused)
+            else if (e.State == DeezerState.Paused)
             {
                 addToLog("Music paused or stopped");
                 // If we were recording a song, now we aren't anymore
@@ -680,7 +680,7 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		void stateCheckTimer_Tick( object sender, EventArgs e )
 		{
-            SpotifyState oldState = currentSpotifyState;
+            DeezerState oldState = currentDeezerState;
             Mp3Tag oldTrack = new Mp3Tag(currentTrack.Title, currentTrack.Artist);
 
             // figure out what Deezer is doing now
@@ -716,8 +716,8 @@ namespace SpotifyWebRecorder.Forms.UI
                                 {
                                     Song = newTag,
                                     PreviousSong = currentTrack,
-                                    State = currentSpotifyState,
-                                    PreviousState = currentSpotifyState
+                                    State = currentDeezerState,
+                                    PreviousState = currentDeezerState
                                 });
                             }
                         }));
@@ -746,12 +746,12 @@ namespace SpotifyWebRecorder.Forms.UI
                         {
                             this.Invoke((Action)(() =>
                             {
-                                if ( currentSpotifyState != SpotifyState.Playing )
+                                if ( currentDeezerState != DeezerState.Playing )
                                 {
                                     StateChanged(this, new StateChangedEventArgs()
                                     {
-                                        PreviousState = currentSpotifyState,
-                                        State = SpotifyState.Playing,
+                                        PreviousState = currentDeezerState,
+                                        State = DeezerState.Playing,
                                         Song = currentTrack,
                                         PreviousSong = currentTrack
                                     });
@@ -762,12 +762,12 @@ namespace SpotifyWebRecorder.Forms.UI
                         {
                             this.Invoke((Action)(() =>
                             {
-                                if (currentSpotifyState != SpotifyState.Paused)
+                                if (currentDeezerState != DeezerState.Paused)
                                 {
                                     StateChanged(this, new StateChangedEventArgs()
                                     {
-                                        PreviousState = currentSpotifyState,
-                                        State = SpotifyState.Paused,
+                                        PreviousState = currentDeezerState,
+                                        State = DeezerState.Paused,
                                         Song = currentTrack,
                                         PreviousSong = currentTrack
                                     });

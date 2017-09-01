@@ -100,12 +100,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Geckofx-Core">
-      <HintPath>..\lib\Geckofx-Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Geckofx-Winforms">
-      <HintPath>..\lib\Geckofx-Winforms.dll</HintPath>
-    </Reference>
     <Reference Include="NAudio, Version=1.7.1.17, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NAudio.1.7.1\lib\net35\NAudio.dll</HintPath>

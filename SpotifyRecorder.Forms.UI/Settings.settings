@@ -17,14 +17,8 @@
     <Setting Name="DeleteThresholdEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="UserAgent" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</Value>
-    </Setting>
     <Setting Name="MuteAds" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="URL" Type="System.String" Scope="User">
-      <Value Profile="(Default)">https://play.spotify.com/</Value>
     </Setting>
   </Settings>
 </SettingsFile>

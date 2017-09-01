@@ -134,6 +134,7 @@ namespace SpotifyWebRecorder.Forms.UI
         private void ChangeApplicationState(RecorderState newState)
         {
             ChangeGui(newState);
+            addToLog("Now " + newState.ToString());
 
             switch (_currentApplicationState)
             {
@@ -635,30 +636,33 @@ namespace SpotifyWebRecorder.Forms.UI
         public void Spotify_StateChanged( object sender, StateChangedEventArgs e )
         {
             addToLog("Change detected");
-            if (currentSpotifyState == SpotifyState.Playing)
+            if (e.State == SpotifyState.Playing)
             {
-                string song = currentTrack.ToString();
+                string song = e.Song.ToString();
                 songLabel.Text = song;
                 addToLog("Now playing: " + song);
-                // If we are not not monitoring, set the state to recording
-                if (_currentApplicationState != RecorderState.NotRecording &&
-                    !(e.PreviousSong.Equals(currentTrack)))
+                // If we are monitoring, set the state to recording
+                if (_currentApplicationState == RecorderState.WaitingForRecording)
                 {
                     ChangeApplicationState(RecorderState.Recording);
                 }
+                // If we are already recording, stop the recording and restart it. 
                 else if (_currentApplicationState == RecorderState.Recording)
                 {
                     ChangeApplicationState(RecorderState.WaitingForRecording);
+                    ChangeApplicationState(RecorderState.Recording);
                 }
             }
-            else if (currentSpotifyState == SpotifyState.Paused)
+            else if (e.State == SpotifyState.Paused)
             {
                 addToLog("Music paused or stopped");
+                // If we were recording a song, now we aren't anymore
                 if (_currentApplicationState == RecorderState.Recording)
                 {
                     ChangeApplicationState(RecorderState.WaitingForRecording);
                 }
             }
+            // Update the current track and current state
             currentSpotifyState = e.State;
             currentTrack = e.Song;
         }
@@ -688,8 +692,8 @@ namespace SpotifyWebRecorder.Forms.UI
                     {
                         var list = (List<object>)response.Result;
 
-                        string artist = list[0].ToString();
-                        string title = list[1].ToString();
+                        string artist = list[1].ToString();
+                        string title = list[0].ToString();
 
                         //currentTrack = new Mp3Tag(title, artist);
                         this.Invoke((Action)(() =>
@@ -717,7 +721,7 @@ namespace SpotifyWebRecorder.Forms.UI
 
 
             // Find out if Deezer is paused or playing
-            string scriptIsPlaying = "dzPlayer.IsPlaying()";
+            string scriptIsPlaying = "dzPlayer.isPlaying()";
 
             try
             {

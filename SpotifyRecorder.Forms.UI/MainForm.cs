@@ -350,9 +350,12 @@ namespace SpotifyWebRecorder.Forms.UI
 
 				recordingTrack = new Mp3Tag( currentTrack.Title, currentTrack.Artist );
 
+                string song = recordingTrack.Artist + " - " + recordingTrack.Title;
+                string file = CreateOutputFile(song, "wav");
+
                 SoundCardRecorder = new SoundCardRecorder(
-								device, CreateOutputFile( recordingTrack.Artist + " - " + recordingTrack.Title, "wav" ),
-								recordingTrack.Artist + " - " + recordingTrack.Title );
+								device, file ,
+								song );
                 SoundCardRecorder.Start();
 
 				addToLog( "Recording!" );
@@ -402,7 +405,8 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		private void ConvertToMp3( string filePath, string bitrate )
         {
-            if (!File.Exists(CreateOutputFile(filePath, "wav")))
+            string wavFile = CreateOutputFile(filePath, "wav");
+            if (!File.Exists( wavFile ))
                 return;
 
 			addToLog( "Converting to mp3... " );
@@ -416,7 +420,7 @@ namespace SpotifyWebRecorder.Forms.UI
 
             process.StartInfo.FileName = "lame.exe";
 			process.StartInfo.Arguments = string.Format( "{2} --tt \"{3}\" --ta \"{4}\" --tc \"{5}\"  \"{0}\" \"{1}\"",
-				CreateOutputFile( filePath, "wav" ),
+				wavFile,
 				CreateOutputFile( recordingTrack.Artist + " - " + recordingTrack.Title, "mp3" ),
 				bitrate,
 				recordingTrack.Title,
@@ -437,7 +441,15 @@ namespace SpotifyWebRecorder.Forms.UI
 			addToLog( "LAME finished!" );
 
 			addToLog( "Deleting wav file... " );
-            File.Delete(CreateOutputFile(filePath, "wav"));
+            try
+            {
+                File.Delete(wavFile);
+            }
+            catch (Exception)
+            {
+
+                addToLog("Error while deleting wav file");
+            }
 
 			addToLog( "Mp3 ready: " + CreateOutputFile( filePath, "mp3" ) );
 			AddSongToList( filePath );
@@ -636,6 +648,8 @@ namespace SpotifyWebRecorder.Forms.UI
         public void Spotify_StateChanged( object sender, StateChangedEventArgs e )
         {
             addToLog("Change detected");
+            currentSpotifyState = e.State;
+            currentTrack = e.Song;
             if (e.State == SpotifyState.Playing)
             {
                 string song = e.Song.ToString();
@@ -662,9 +676,6 @@ namespace SpotifyWebRecorder.Forms.UI
                     ChangeApplicationState(RecorderState.WaitingForRecording);
                 }
             }
-            // Update the current track and current state
-            currentSpotifyState = e.State;
-            currentTrack = e.Song;
         }
 
 

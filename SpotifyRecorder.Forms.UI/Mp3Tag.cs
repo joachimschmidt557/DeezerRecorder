@@ -15,7 +15,6 @@
 
         public bool Equals(Mp3Tag obj)
         {
-
             if (obj == null || GetType() != obj.GetType())
             {
                 return false;

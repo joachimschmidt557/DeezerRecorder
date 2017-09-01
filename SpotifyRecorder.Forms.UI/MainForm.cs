@@ -111,11 +111,11 @@ namespace SpotifyWebRecorder.Forms.UI
             //browser.DocumentTitleChanged += new EventHandler( browser_DocumentTitleChanged );
 
 
-            ChromiumWebBrowser aboutBrowser = new ChromiumWebBrowser("about:plugins");
+            ChromiumWebBrowser aboutBrowser = new ChromiumWebBrowser("file://" + baseDir.Replace("\\", "/") + "/about.html");
             tabPageAbout.Controls.Add(aboutBrowser);
 
             ChromiumWebBrowser helpBrowser = new ChromiumWebBrowser("file://"+baseDir.Replace("\\","/")+"/help.html");
-            tabPageAbout.Controls.Add(helpBrowser);
+            tabPageHelp.Controls.Add(helpBrowser);
 
 			stateCheckTimer.Interval = 25;
 			stateCheckTimer.Tick += new EventHandler( stateCheckTimer_Tick );

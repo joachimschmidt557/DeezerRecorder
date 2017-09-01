@@ -13,30 +13,49 @@ using System.Linq;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 using System.Runtime.InteropServices;
-using Gecko;
+using CefSharp;
+using CefSharp.WinForms;
 
 namespace SpotifyWebRecorder.Forms.UI
 {
     public partial class MainForm : Form
     {
-		GeckoWebBrowser browser;
+		//GeckoWebBrowser browser;
+        ChromiumWebBrowser mainBrowser;
 		Timer stateCheckTimer = new Timer();
-
+        
+        /// <summary>
+        /// The current state of this program
+        /// </summary>
 		private enum RecorderState
         {
+            /// <summary>
+            /// We are not monitoring for songs
+            /// </summary>
             NotRecording = 1,
+            /// <summary>
+            /// We are monitoring for songs
+            /// </summary>
             WaitingForRecording = 2,
+            /// <summary>
+            /// A song is currently being recorded
+            /// </summary>
             Recording = 3,
+            /// <summary>
+            /// We are shutting down
+            /// </summary>
             Closing = 4,
         }
 
         private SoundCardRecorder SoundCardRecorder { get; set; }
-		private bool MutedSound = false;
+		//private bool MutedSound = false;
         private FolderBrowserDialog folderDialog;
         private RecorderState _currentApplicationState = RecorderState.NotRecording;
 
-
-		private enum SpotifyState
+        /// <summary>
+        /// The current state of the web player
+        /// </summary>
+		public enum SpotifyState
 		{
 			Unknown = 0,
 			Paused = 1,
@@ -44,11 +63,23 @@ namespace SpotifyWebRecorder.Forms.UI
 			Ad = 3,
 		}
 
-		private Mp3Tag currentTrack = new Mp3Tag("","","");
-		private Mp3Tag recordingTrack = new Mp3Tag("","","");
+		private Mp3Tag currentTrack = new Mp3Tag("","");
+		private Mp3Tag recordingTrack = new Mp3Tag("","");
 		private SpotifyState currentSpotifyState = SpotifyState.Unknown;
 
-		public MainForm()
+        public class StateChangedEventArgs : EventArgs
+        {
+            public Mp3Tag Song { get; set; }
+            public Mp3Tag PreviousSong { get; set; }
+            public SpotifyState State { get; set; }
+            public SpotifyState PreviousState { get; set; }
+        }
+
+        public delegate void StateChangedEventHandler(object sender, StateChangedEventArgs e);
+
+        public event StateChangedEventHandler StateChanged;
+
+        public MainForm()
         {
             InitializeComponent();
 
@@ -61,57 +92,48 @@ namespace SpotifyWebRecorder.Forms.UI
 
             Load += OnLoad;
             Closing += OnClosing;
+            StateChanged += new StateChangedEventHandler(Spotify_StateChanged);
 
-			string baseDir = System.IO.Path.GetDirectoryName( System.Reflection.Assembly.GetEntryAssembly().Location );
+            string baseDir = System.IO.Path.GetDirectoryName( System.Reflection.Assembly.GetEntryAssembly().Location );
 
-			Xpcom.Initialize(  baseDir + "\\xulrunner" );
-			browser = new GeckoWebBrowser { Dock = DockStyle.Fill };
-			GeckoPreferences.User["general.useragent.override"] = Util.GetDefaultUserAgent();
-			GeckoPreferences.Default["extensions.blocklist.enabled"] = false;	// enables flash. If it does not work, also make sure that "Project -> Properties -> Debug -> Enable Visual Studio hostng process" is not enablable
+            // Initailize the chromium browser
+            var settings = new CefSettings();
+            //settings.CefCommandLineArgs.Add("enable-system-flash", "1");
+            settings.CachePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\DeezerRecorder\\";
+            Cef.Initialize(settings);
 
-			this.splitContainer1.Panel2.Controls.Add( browser );
-			//browser.DocumentTitleChanged += new EventHandler( browser_DocumentTitleChanged );
+   //         Xpcom.Initialize(  baseDir + "\\xulrunner" );
+			//browser = new GeckoWebBrowser { Dock = DockStyle.Fill };
+			//GeckoPreferences.User["general.useragent.override"] = Util.GetDefaultUserAgent();
+			//GeckoPreferences.Default["extensions.blocklist.enabled"] = false;   // enables flash. If it does not work, also make sure that "Project -> Properties -> Debug -> Enable Visual Studio hostng process" is not enablable
 
-			GeckoWebBrowser browserAbout = new GeckoWebBrowser { Dock = DockStyle.Fill };
-			browserAbout.Navigate( baseDir + "\\About.html" );
-			tabPageAbout.Controls.Add( browserAbout );
-			browserAbout.DomClick += OpenGeckoLinksInNewWindow;
+   //         this.splitContainer1.Panel2.Controls.Add(browser);
+            //browser.DocumentTitleChanged += new EventHandler( browser_DocumentTitleChanged );
 
-			GeckoWebBrowser browserHelp = new GeckoWebBrowser { Dock = DockStyle.Fill };
-			browserHelp.Navigate( baseDir + "\\Help.html" );
-			tabPageHelp.Controls.Add( browserHelp );
-			browserHelp.DomClick += OpenGeckoLinksInNewWindow;
+
+            ChromiumWebBrowser aboutBrowser = new ChromiumWebBrowser("file://" + baseDir.Replace("\\", "/") + "/about.html");
+            tabPageAbout.Controls.Add(aboutBrowser);
+
+            ChromiumWebBrowser helpBrowser = new ChromiumWebBrowser("file://"+baseDir.Replace("\\","/")+"/help.html");
+            tabPageHelp.Controls.Add(helpBrowser);
 
 			stateCheckTimer.Interval = 25;
 			stateCheckTimer.Tick += new EventHandler( stateCheckTimer_Tick );
-			stateCheckTimer.Start();
+			//stateCheckTimer.Start();
 
 			addToLog( "Application started..." );
 
 #if !DEBUG
 			tabControl1.TabPages.RemoveByKey("tabPageLog");
-			browser.Navigate( Util.GetDefaultURL() );
 #else
 			//browser.Navigate( Util.GetDefaultURL() );
 #endif
 		}
 
-		void OpenGeckoLinksInNewWindow( object sender, DomMouseEventArgs e )
-		{
-			if( sender != null && e != null && e.Target != null )
-			{
-				GeckoElement clicked = e.Target.CastToGeckoElement();
-				if( clicked.TagName == "A" )
-				{
-					e.Handled = true;
-					System.Diagnostics.Process.Start( clicked.GetAttribute( "href" ) );
-				}
-			}
-		}
-
         private void ChangeApplicationState(RecorderState newState)
         {
             ChangeGui(newState);
+            addToLog("Now " + newState.ToString());
 
             switch (_currentApplicationState)
             {
@@ -192,6 +214,20 @@ namespace SpotifyWebRecorder.Forms.UI
 
         private void OnLoad(object sender, EventArgs eventArgs)
         {
+
+            // Load the main browser
+            mainBrowser = new ChromiumWebBrowser("https://www.deezer.com/")
+            {
+                BrowserSettings = new BrowserSettings()
+                {
+                    Plugins = CefState.Enabled
+                }
+            };
+            this.splitContainer1.Panel2.Controls.Add(mainBrowser);
+
+            // Load the timer only when loading is finished
+            mainBrowser.LoadingStateChanged += OnLoadingStateChanged;
+            
             //load the available devices
             LoadWasapiDevicesCombo();
 
@@ -221,6 +257,7 @@ namespace SpotifyWebRecorder.Forms.UI
 			}
 			catch( Exception ex )
 			{
+                addToLog("Error: " + ex.Message);
 			}
 
         }
@@ -229,6 +266,9 @@ namespace SpotifyWebRecorder.Forms.UI
         {
 			StopRecording();
             ChangeApplicationState(RecorderState.Closing);
+
+            Cef.Shutdown();
+
 			Util.SetDefaultBitrate( bitrateComboBox.SelectedIndex );
             Util.SetDefaultDevice(deviceListBox.SelectedItem.ToString());
             Util.SetDefaultOutputPath(outputFolderTextBox.Text);
@@ -236,6 +276,12 @@ namespace SpotifyWebRecorder.Forms.UI
             Util.SetDefaultThreshold((int)thresholdTextBox.Value);
             Util.SetDefaultThresholdEnabled(thresholdCheckBox.Checked);
 			Util.SetDefaultMuteAdsEnabled( MuteOnAdsCheckBox.Checked );
+        }
+
+        private void OnLoadingStateChanged(object sender, LoadingStateChangedEventArgs args)
+        {
+            if (!args.IsLoading)
+                this.Invoke((Action) (() => stateCheckTimer.Start()));
         }
 
         private void ButtonPlayClick(object sender, EventArgs e)
@@ -301,11 +347,14 @@ namespace SpotifyWebRecorder.Forms.UI
                 if(SoundCardRecorder!=null)
                     StopRecording();
 
-				recordingTrack = new Mp3Tag( currentTrack.Title, currentTrack.Artist, currentTrack.TrackUri );
+				recordingTrack = new Mp3Tag( currentTrack.Title, currentTrack.Artist );
+
+                string song = recordingTrack.Artist + " - " + recordingTrack.Title;
+                string file = CreateOutputFile(song, "wav");
 
                 SoundCardRecorder = new SoundCardRecorder(
-								device, CreateOutputFile( recordingTrack.Artist + " - " + recordingTrack.Title, "wav" ),
-								recordingTrack.Artist + " - " + recordingTrack.Title );
+								device, file ,
+								song );
                 SoundCardRecorder.Start();
 
 				addToLog( "Recording!" );
@@ -355,7 +404,8 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		private void ConvertToMp3( string filePath, string bitrate )
         {
-            if (!File.Exists(CreateOutputFile(filePath, "wav")))
+            string wavFile = CreateOutputFile(filePath, "wav");
+            if (!File.Exists( wavFile ))
                 return;
 
 			addToLog( "Converting to mp3... " );
@@ -369,12 +419,12 @@ namespace SpotifyWebRecorder.Forms.UI
 
             process.StartInfo.FileName = "lame.exe";
 			process.StartInfo.Arguments = string.Format( "{2} --tt \"{3}\" --ta \"{4}\" --tc \"{5}\"  \"{0}\" \"{1}\"",
-				CreateOutputFile( filePath, "wav" ),
+				wavFile,
 				CreateOutputFile( recordingTrack.Artist + " - " + recordingTrack.Title, "mp3" ),
 				bitrate,
 				recordingTrack.Title,
 				recordingTrack.Artist,
-				recordingTrack.TrackUri );
+				"" );
 
             process.StartInfo.WorkingDirectory = new FileInfo(Application.ExecutablePath).DirectoryName;
             addToLog( "Starting LAME..." );
@@ -390,7 +440,15 @@ namespace SpotifyWebRecorder.Forms.UI
 			addToLog( "LAME finished!" );
 
 			addToLog( "Deleting wav file... " );
-            File.Delete(CreateOutputFile(filePath, "wav"));
+            try
+            {
+                File.Delete(wavFile);
+            }
+            catch (Exception)
+            {
+
+                addToLog("Error while deleting wav file");
+            }
 
 			addToLog( "Mp3 ready: " + CreateOutputFile( filePath, "mp3" ) );
 			AddSongToList( filePath );
@@ -490,12 +548,12 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		private void toolStripButton_Home_Click( object sender, EventArgs e )
 		{
-			browser.Navigate( Util.GetDefaultURL() );
+            mainBrowser.Load("https://www.deezer.com/");
 		}
 
 		private void toolStripButton_Back_Click( object sender, EventArgs e )
 		{
-			if( browser.CanGoBack ) browser.GoBack();
+            mainBrowser.Back();
 		}
 
 		private void addToLog( string text )
@@ -586,156 +644,175 @@ namespace SpotifyWebRecorder.Forms.UI
 			Process.Start( "sndvol" );
 		}
 
-		private void toolStripButtonHideSidebar_Click( object sender, EventArgs e )
-		{
-			if( toolStripButtonHideSidebar.Checked )
-			{
-				splitContainer1.Panel1Collapsed = false;
-			}
-			else
-			{
-				splitContainer1.Panel1Collapsed = true;
-			}
-			toolStripButtonHideSidebar.Checked = !toolStripButtonHideSidebar.Checked;
-		}
+        public void Spotify_StateChanged( object sender, StateChangedEventArgs e )
+        {
+            addToLog("Change detected");
+            currentSpotifyState = e.State;
+            currentTrack = e.Song;
+            if (e.State == SpotifyState.Playing)
+            {
+                string song = e.Song.ToString();
+                songLabel.Text = song;
+                addToLog("Now playing: " + song);
+                // If we are monitoring, set the state to recording
+                if (_currentApplicationState == RecorderState.WaitingForRecording)
+                {
+                    ChangeApplicationState(RecorderState.Recording);
+                }
+                // If we are already recording, stop the recording and restart it. 
+                else if (_currentApplicationState == RecorderState.Recording)
+                {
+                    ChangeApplicationState(RecorderState.WaitingForRecording);
+                    ChangeApplicationState(RecorderState.Recording);
+                }
+            }
+            else if (e.State == SpotifyState.Paused)
+            {
+                addToLog("Music paused or stopped");
+                // If we were recording a song, now we aren't anymore
+                if (_currentApplicationState == RecorderState.Recording)
+                {
+                    ChangeApplicationState(RecorderState.WaitingForRecording);
+                }
+            }
+        }
+
 
 		void stateCheckTimer_Tick( object sender, EventArgs e )
 		{
-			// figure out what spotify is doing right now
+            SpotifyState oldState = currentSpotifyState;
+            Mp3Tag oldTrack = new Mp3Tag(currentTrack.Title, currentTrack.Artist);
 
-			var iframes = browser.Document.GetElementsByTagName( "iframe" );
-			foreach( Gecko.DOM.GeckoIFrameElement frame in iframes )
-			{
-				GeckoHtmlElement doc = null;
+            // figure out what Deezer is doing now
+            // therefore, we need to execute a small javascript code
+            // which returns all HTML elements with a specific tag
+            // the first element of these gives us the song title
+            // the next elements give us the artists
 
-				string queryArtist = "", queryTrack = "", queryTrackUri = "", queryIsPlaying = "", queryAddButton = "", attrTrackUri = "";
+            // Get this array
+            string script = "[dzPlayer.getSongTitle(), dzPlayer.getArtistName()]";
 
-				// Old Player
-				if( frame.Id == "app-player" )
-				{
-					doc = frame.ContentDocument.DocumentElement as GeckoHtmlElement;
+            try
+            {
+                mainBrowser.EvaluateScriptAsync(script).ContinueWith(x =>
+                {
+                    var response = x.Result;
 
-					queryIsPlaying = "#play-pause.playing";
-					queryArtist = "#track-artist a";
-					queryTrack = "#track-name a";
-					queryTrackUri = "#track-name a";
-					attrTrackUri = "href";
-					queryAddButton = "#track-add";
-				}
-				// New Player
-				if( frame.Id == "main" )
-				{
-					doc = frame.ContentDocument.DocumentElement as GeckoHtmlElement;
+                    if (response.Success && response.Result != null)
+                    {
+                        var list = (List<object>)response.Result;
 
-					queryIsPlaying = "#play.playing";
-					queryArtist = "p.artist a";
-					queryTrack = "p.track a";
-					queryTrackUri = "p.track a";
-					attrTrackUri = "data-uri"; 
-					queryAddButton = ".caption button.button-add";
-				}
+                        string artist = list[1].ToString();
+                        string title = list[0].ToString();
 
-				if( doc != null )
-				{
-					SpotifyState oldState = currentSpotifyState;
-					string oldTrack = currentTrack.TrackUri;
-
-					// get current track
-					var isPlaying = doc.QuerySelector( queryIsPlaying );
-					if( isPlaying != null )
-					{
-						currentSpotifyState = SpotifyState.Playing;
-						var artist = doc.QuerySelector( queryArtist ).TextContent;
-						var title = doc.QuerySelector( queryTrack ).TextContent;
-						var trackUri = doc.QuerySelector( queryTrackUri ).GetAttribute( attrTrackUri );
-						currentTrack = new Mp3Tag( title, artist, trackUri );
-					}
-					else
-					{
-						currentSpotifyState = SpotifyState.Paused;
-					}
-
-					// ad detection (new player only)
-					var addToMyMusicButton = doc.QuerySelector( queryAddButton );
-					if( addToMyMusicButton != null )
-					{
-						var style = addToMyMusicButton.Attributes["style"];
-						if( style != null )
-						{
-							if( style.NodeValue.Contains( "display: none" ) )
-							{
-								currentSpotifyState = SpotifyState.Ad;
-							}
-						}
-					}
-					
-					// extra ad detection, works for old player too
-					if( currentTrack.Artist == "Spotify" ) currentSpotifyState = SpotifyState.Ad;
+                        //currentTrack = new Mp3Tag(title, artist);
+                        this.Invoke((Action)(() =>
+                        {
+                            //currentTrack = new Mp3Tag(title, artist);
+                            Mp3Tag newTag = new Mp3Tag(title, artist);
+                            if ( !(newTag.Equals(currentTrack)) )
+                            {
+                                StateChanged(this, new StateChangedEventArgs()
+                                {
+                                    Song = newTag,
+                                    PreviousSong = currentTrack,
+                                    State = currentSpotifyState,
+                                    PreviousState = currentSpotifyState
+                                });
+                            }
+                        }));
+                    }
+                });
+            }
+            catch(Exception ex)
+            {
+                addToLog("Error: " + ex.Message);
+            }
 
 
-					// mute sound on ads
-					if( currentSpotifyState == SpotifyState.Ad )
-					{
-						if( MuteOnAdsCheckBox.Checked && !MutedSound )
-						{
-							addToLog( "Ads detected - Attempting to Mute!" );
-							Util.ToggleMuteVolume( this.Handle );
-							MutedSound = true;
-						}
-					}
-					else
-					{
-						if( MutedSound )
-						{
-							addToLog( "Un-Muting" );
-							Util.ToggleMuteVolume( this.Handle );
-							MutedSound = false;
-						}
-					}
+            // Find out if Deezer is paused or playing
+            string scriptIsPlaying = "dzPlayer.isPlaying()";
 
-					// set state if changed
-					if( oldState != currentSpotifyState || oldTrack != currentTrack.TrackUri )
-					{
-						if( currentSpotifyState == SpotifyState.Playing )
-						{
-							var song = currentTrack.Artist + " - " + currentTrack.Title;
-							songLabel.Text = song;
-							addToLog( "Now playing: " + song + " (" + currentTrack.TrackUri  + ")" );
-							if( _currentApplicationState != RecorderState.NotRecording && oldTrack != currentTrack.TrackUri )
-							{
-								ChangeApplicationState( RecorderState.Recording );
-							}
-							else if( _currentApplicationState == RecorderState.Recording )
-							{
-								ChangeApplicationState( RecorderState.WaitingForRecording );
-							}
-						}
-						else if( currentSpotifyState == SpotifyState.Paused )
-						{
-							addToLog( "Music stopped" );
-							if( _currentApplicationState == RecorderState.Recording )
-							{
-								ChangeApplicationState( RecorderState.WaitingForRecording );
-							}
-						}
-						else if( currentSpotifyState == SpotifyState.Ad )
-						{
-							addToLog( "Ads..." );
-							if( _currentApplicationState == RecorderState.Recording )
-							{
-								ChangeApplicationState( RecorderState.WaitingForRecording );
-							}
-						}
+            try
+            {
+                mainBrowser.EvaluateScriptAsync(scriptIsPlaying).ContinueWith(y =>
+                {
+                    var responseIsPlaying = y.Result;
 
-					}
+                    if (responseIsPlaying.Success && responseIsPlaying.Result != null)
+                    {
+                        bool isPlaying = (bool)responseIsPlaying.Result;
+                        if (isPlaying)
+                        {
+                            this.Invoke((Action)(() =>
+                            {
+                                if ( currentSpotifyState != SpotifyState.Playing )
+                                {
+                                    StateChanged(this, new StateChangedEventArgs()
+                                    {
+                                        PreviousState = currentSpotifyState,
+                                        State = SpotifyState.Playing,
+                                        Song = currentTrack,
+                                        PreviousSong = currentTrack
+                                    });
+                                }
+                            }));
+                        }
+                        else
+                        {
+                            this.Invoke((Action)(() =>
+                            {
+                                if (currentSpotifyState != SpotifyState.Paused)
+                                {
+                                    StateChanged(this, new StateChangedEventArgs()
+                                    {
+                                        PreviousState = currentSpotifyState,
+                                        State = SpotifyState.Paused,
+                                        Song = currentTrack,
+                                        PreviousSong = currentTrack
+                                    });
+                                }
+                            }));
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                addToLog("Error: " + ex.Message);
+            }
 
-					break;
-				}
-
-			}
-
-			songLabel.Visible = _currentApplicationState == RecorderState.Recording;
-		}
+            //// Check if state is different
+            //// and handle changes accordingly
+            //if ( oldState != currentSpotifyState || !(oldTrack.Equals(currentTrack) ))
+            //{
+            //    addToLog("Change detected");
+            //    if ( currentSpotifyState == SpotifyState.Playing )
+            //    {
+            //        string song = currentTrack.ToString();
+            //        songLabel.Text = song;
+            //        addToLog("Now playing: " + song);
+            //        // If we are not not monitoring, set the state to recording
+            //        if ( _currentApplicationState != RecorderState.NotRecording &&
+            //            !(oldTrack.Equals(currentTrack)))
+            //        {
+            //            ChangeApplicationState(RecorderState.Recording);
+            //        }
+            //        else if ( _currentApplicationState == RecorderState.Recording )
+            //        {
+            //            ChangeApplicationState(RecorderState.WaitingForRecording);
+            //        }
+            //    }
+            //    else if ( currentSpotifyState == SpotifyState.Paused )
+            //    {
+            //        addToLog("Music paused or stopped");
+            //        if ( _currentApplicationState == RecorderState.Recording )
+            //        {
+            //            ChangeApplicationState(RecorderState.WaitingForRecording);
+            //        }
+            //    }
+            //}
+        }
 
 	}
 }

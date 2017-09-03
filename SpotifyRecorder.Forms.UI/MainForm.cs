@@ -405,8 +405,11 @@ namespace SpotifyWebRecorder.Forms.UI
 		private void ConvertToMp3( string filePath, string bitrate )
         {
             string wavFile = CreateOutputFile(filePath, "wav");
+            // If the original wav recording doesn't exist, exit
             if (!File.Exists( wavFile ))
                 return;
+
+            string mp3File = CreateOutputFile(filePath, "mp3");
 
 			addToLog( "Converting to mp3... " );
 
@@ -420,7 +423,7 @@ namespace SpotifyWebRecorder.Forms.UI
             process.StartInfo.FileName = "lame.exe";
 			process.StartInfo.Arguments = string.Format( "{2} --tt \"{3}\" --ta \"{4}\" --tc \"{5}\"  \"{0}\" \"{1}\"",
 				wavFile,
-				CreateOutputFile( recordingTrack.Artist + " - " + recordingTrack.Title, "mp3" ),
+				mp3File,
 				bitrate,
 				recordingTrack.Title,
 				recordingTrack.Artist,
@@ -536,15 +539,6 @@ namespace SpotifyWebRecorder.Forms.UI
                 Util.SetDefaultOutputPath(folderDialog.SelectedPath);
             }
         }
-
-		private void webBrowser_DocumentCompleted( object sender, WebBrowserDocumentCompletedEventArgs e )
-		{
-			//Console.Write("Loaded!");
-		}
-		private void webBrowser_Navigating( object sender, WebBrowserNavigatingEventArgs e )
-		{
-			//Console.WriteLine( "Navigating to: " + e.Url );
-		}
 
 		private void toolStripButton_Home_Click( object sender, EventArgs e )
 		{

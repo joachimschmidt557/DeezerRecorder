@@ -185,18 +185,21 @@ namespace SpotifyWebRecorder.Forms.UI
                     buttonStartRecording.Enabled = true;
                     buttonStopRecording.Enabled = false;
                     deviceListBox.Enabled = true;
+                    label6.Text = "Now playing: ";
                     break;
                 case RecorderState.WaitingForRecording:
                     browseButton.Enabled = false;
                     buttonStartRecording.Enabled = false;
                     buttonStopRecording.Enabled = true;
                     deviceListBox.Enabled = false;
+                    label6.Text = "Now playing: ";
                     break;
                 case RecorderState.Recording:
                     browseButton.Enabled = false;
                     buttonStartRecording.Enabled = false;
                     buttonStopRecording.Enabled = true;
                     deviceListBox.Enabled = false;
+                    label6.Text = "Now recording: ";
                     break;
             }
         }

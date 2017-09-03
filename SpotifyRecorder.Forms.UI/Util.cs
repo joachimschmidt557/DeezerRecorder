@@ -84,15 +84,5 @@ namespace SpotifyWebRecorder.Forms.UI
             Settings.Default.Save();
         }
 
-		public static string GetDefaultUserAgent()
-		{
-			return Settings.Default.UserAgent;
-		}
-		public static void SetDefaultUserAgent( string ua )
-		{
-			Settings.Default.UserAgent = ua;
-			Settings.Default.Save();
-		}
-
 	}
 }

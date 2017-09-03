@@ -20,7 +20,6 @@ namespace SpotifyWebRecorder.Forms.UI
 {
     public partial class MainForm : Form
     {
-		//GeckoWebBrowser browser;
         ChromiumWebBrowser mainBrowser;
 		Timer stateCheckTimer = new Timer();
         
@@ -102,15 +101,6 @@ namespace SpotifyWebRecorder.Forms.UI
             settings.CachePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\DeezerRecorder\\";
             Cef.Initialize(settings);
 
-   //         Xpcom.Initialize(  baseDir + "\\xulrunner" );
-			//browser = new GeckoWebBrowser { Dock = DockStyle.Fill };
-			//GeckoPreferences.User["general.useragent.override"] = Util.GetDefaultUserAgent();
-			//GeckoPreferences.Default["extensions.blocklist.enabled"] = false;   // enables flash. If it does not work, also make sure that "Project -> Properties -> Debug -> Enable Visual Studio hostng process" is not enablable
-
-   //         this.splitContainer1.Panel2.Controls.Add(browser);
-            //browser.DocumentTitleChanged += new EventHandler( browser_DocumentTitleChanged );
-
-
             ChromiumWebBrowser aboutBrowser = new ChromiumWebBrowser("file://" + baseDir.Replace("\\", "/") + "/about.html");
             tabPageAbout.Controls.Add(aboutBrowser);
 
@@ -119,7 +109,6 @@ namespace SpotifyWebRecorder.Forms.UI
 
 			stateCheckTimer.Interval = 25;
 			stateCheckTimer.Tick += new EventHandler( stateCheckTimer_Tick );
-			//stateCheckTimer.Start();
 
 			addToLog( "Application started..." );
 
@@ -552,7 +541,8 @@ namespace SpotifyWebRecorder.Forms.UI
 
 		private void addToLog( string text )
 		{
-			if( this.InvokeRequired )
+#if DEBUG
+            if ( this.InvokeRequired )
 			{
 				// if required for thread safety, call self using invoke instead
 				this.Invoke( new MethodInvoker( delegate() { addToLog( text ); } ) );
@@ -563,7 +553,8 @@ namespace SpotifyWebRecorder.Forms.UI
 				listBoxLog.Items.Add( "[" + DateTime.Now.ToShortTimeString() + "] " + text );
 				listBoxLog.SelectedIndex = listBoxLog.Items.Count-1;
 			}
-		}
+#endif
+        }
 
 		private void thresholdCheckBox_CheckedChanged( object sender, EventArgs e )
 		{
@@ -776,36 +767,6 @@ namespace SpotifyWebRecorder.Forms.UI
                 addToLog("Error: " + ex.Message);
             }
 
-            //// Check if state is different
-            //// and handle changes accordingly
-            //if ( oldState != currentSpotifyState || !(oldTrack.Equals(currentTrack) ))
-            //{
-            //    addToLog("Change detected");
-            //    if ( currentSpotifyState == SpotifyState.Playing )
-            //    {
-            //        string song = currentTrack.ToString();
-            //        songLabel.Text = song;
-            //        addToLog("Now playing: " + song);
-            //        // If we are not not monitoring, set the state to recording
-            //        if ( _currentApplicationState != RecorderState.NotRecording &&
-            //            !(oldTrack.Equals(currentTrack)))
-            //        {
-            //            ChangeApplicationState(RecorderState.Recording);
-            //        }
-            //        else if ( _currentApplicationState == RecorderState.Recording )
-            //        {
-            //            ChangeApplicationState(RecorderState.WaitingForRecording);
-            //        }
-            //    }
-            //    else if ( currentSpotifyState == SpotifyState.Paused )
-            //    {
-            //        addToLog("Music paused or stopped");
-            //        if ( _currentApplicationState == RecorderState.Recording )
-            //        {
-            //            ChangeApplicationState(RecorderState.WaitingForRecording);
-            //        }
-            //    }
-            //}
         }
 
 	}

@@ -24,18 +24,18 @@ namespace SpotifyWebRecorder.Forms.UI
         #region Public Properties
 
         public string FilePath { get; set; }
-        public string Song { get; set; }
+        public Mp3Tag SongTag { get; set; }
 		public int Duration { get { return _lastRecordingDuration; } }
 
         #endregion
 
         #region Constructor
 
-        public SoundCardRecorder(MMDevice device, string filePath, string song)
+        public SoundCardRecorder(MMDevice device, string filePath, Mp3Tag songTag)
         {
             Device = device;
             FilePath = filePath;
-            Song = song;
+            SongTag = songTag;
 
             _waveIn = new WasapiCapture(Device);
             _writer = new WaveFileWriter(FilePath, _waveIn.WaveFormat);

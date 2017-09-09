@@ -4,7 +4,7 @@
     {
         public string Title { get; set; }
         public string Artist { get; set; }
-		//public string TrackUri { get; set; }
+		public string ID { get; set; }
 
         public Mp3Tag(string title, string artist)
         {
@@ -34,6 +34,11 @@
         public override string ToString()
         {
             return this.Artist + " - " + this.Title;
+        }
+
+        public static Mp3Tag EmptyTag()
+        {
+            return new Mp3Tag("", "");
         }
     }
 }

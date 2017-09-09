@@ -21,7 +21,7 @@ namespace SpotifyWebRecorder.Forms.UI
             if (string.IsNullOrEmpty(Settings.Default.OutputPath))
             {
                 Settings.Default.OutputPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "SpotifyWebRecorder");
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "DeezerRecorder");
                 if (!Directory.Exists(Settings.Default.OutputPath))
                     Directory.CreateDirectory(Settings.Default.OutputPath);
                 Settings.Default.Save();
@@ -84,24 +84,5 @@ namespace SpotifyWebRecorder.Forms.UI
             Settings.Default.Save();
         }
 
-		public static string GetDefaultUserAgent()
-		{
-			return Settings.Default.UserAgent;
-		}
-		public static void SetDefaultUserAgent( string ua )
-		{
-			Settings.Default.UserAgent = ua;
-			Settings.Default.Save();
-		}
-
-		public static string GetDefaultURL()
-		{
-			return Settings.Default.URL;
-		}
-		public static void SetDefaultURL( string url )
-		{
-			Settings.Default.URL = url;
-			Settings.Default.Save();
-		}
 	}
 }

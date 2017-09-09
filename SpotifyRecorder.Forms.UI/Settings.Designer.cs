@@ -85,18 +85,6 @@ namespace SpotifyWebRecorder.Forms.UI {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko")]
-        public string UserAgent {
-            get {
-                return ((string)(this["UserAgent"]));
-            }
-            set {
-                this["UserAgent"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool MuteAds {
             get {
@@ -104,18 +92,6 @@ namespace SpotifyWebRecorder.Forms.UI {
             }
             set {
                 this["MuteAds"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("https://play.spotify.com/")]
-        public string URL {
-            get {
-                return ((string)(this["URL"]));
-            }
-            set {
-                this["URL"] = value;
             }
         }
     }

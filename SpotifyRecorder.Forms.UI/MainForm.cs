@@ -326,6 +326,12 @@ namespace SpotifyWebRecorder.Forms.UI
             listBoxRecordings.Items.Clear();
         }
 
+        /// <summary>
+        /// Converts a song and an extension into a file path
+        /// </summary>
+        /// <param name="song">The song</param>
+        /// <param name="extension">The extension</param>
+        /// <returns>The file path</returns>
         private string CreateOutputFile(string song, string extension)
         {
             song = RemoveInvalidFilePathCharacters(song, string.Empty);
@@ -383,27 +389,38 @@ namespace SpotifyWebRecorder.Forms.UI
                     {
                         addToLog("Recorded file: " + filePath);
                         encodingLabel.Text = song;
-                        PostProcessing(song, songTag);
+                        PostProcessing(filePath, songTag);
                     }
                 }
             }
         }
 
-        private void PostProcessing(string song, Mp3Tag songTag)
+        /// <summary>
+        /// Initiates the wav-to-mp3 conversion process
+        /// </summary>
+        /// <param name="filePath">The file path</param>
+        /// <param name="songTag">The song information</param>
+        private void PostProcessing(string filePath, Mp3Tag songTag)
         {
             string bitrate = (string)bitrateComboBox.SelectedValue;
-            Task t = new Task(() => ConvertToMp3(song, bitrate, songTag));
+            Task t = new Task(() => ConvertToMp3(bitrate, songTag));
             t.Start();
         }
 
-        private void ConvertToMp3(string filePath, string bitrate, Mp3Tag songTag)
+        /// <summary>
+        /// Converts the specified wav file to MP3
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="bitrate"></param>
+        /// <param name="songTag"></param>
+        private void ConvertToMp3(string bitrate, Mp3Tag songTag)
         {
-            string wavFile = CreateOutputFile(filePath, "wav");
+            string wavFile = CreateOutputFile(songTag.ToString(), "wav");
             // If the original wav recording doesn't exist, exit
             if (!File.Exists(wavFile))
                 return;
 
-            string mp3File = CreateOutputFile(filePath, "mp3");
+            string mp3File = CreateOutputFile(songTag.ToString(), "mp3");
 
             addToLog("Converting to mp3... ");
 
@@ -447,8 +464,8 @@ namespace SpotifyWebRecorder.Forms.UI
                 addToLog("Error while deleting wav file");
             }
 
-            addToLog("Mp3 ready: " + CreateOutputFile(filePath, "mp3"));
-            AddSongToList(filePath);
+            addToLog("Mp3 ready: " + mp3File);
+            AddSongToList(mp3File);
         }
 
         private void AddSongToList(string song)

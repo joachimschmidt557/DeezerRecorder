@@ -1,2 +1,3 @@
 language: csharp
 solution: DeezerRecorder.sln
+script: xbuild /p:Configuration=Release /p:Platform="x86" DeezerRecorder.sln
